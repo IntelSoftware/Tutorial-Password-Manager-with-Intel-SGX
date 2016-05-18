@@ -1,1 +1,3 @@
+passwordManagerEnclave contains enclave code that will be officially used for the GUI/app
 
+passwordManagerApp contains code to demo and test enclave code
