@@ -22,14 +22,15 @@ int addUser(char *username, char *password, size_t len)
 	return 0;
 }
 
-bool authenticate(string username, string password)
+int authenticate(char *username, char *password, size_t len)
 {
-	if(!encryptPassword(&password)) return false;
+	string passwd = string(password);
+	if(!encryptPassword(&passwd)) return -1;
 	it = keypass.find(string(username));
-	if(it == keypass.end() || password.compare(it->second.password) != 0) 
-		return false;
+	if(it == keypass.end() || passwd.compare(it->second.password) != 0) 
+		return -1;
 
-	return true;
+	return 0;
 }
 
 
@@ -61,6 +62,19 @@ int findUser(char *username, size_t len)
 	return 0;
 }
 
+/* Skeleton code, if another parameter is added to the metadata
+int getXXX(char *username, size_t len)
+{
+	it = keypass.find(string(username));
+	if(it == keypass.end())
+		//username does not exist
+		return -1;
+
+	Metadata data = it->second;
+	memcpy(username,(void*)&data.XXX,data.XXX.size()+1);
+	return 0;
+}
+*/
 
 int getAccount(char *username, size_t len)
 {
@@ -96,7 +110,10 @@ int getPassword(char *username, size_t len)
 	return 0;
 }
 
-
+int getSize()
+{
+	return size;
+}
 
 int getUrl(char *username, size_t len)
 {
@@ -119,13 +136,23 @@ int removeUser(char *username, size_t len)
 	//	return -1;
 	if(keypass.erase(username) != 1)
 		return -1;
+	size--;
 	return 0;
 }
 
 
 
-
-
+/*
+int setXXX(char *username, char *newVal, size_t len)
+{
+	it = keypass.find(string(username));
+	Metadata data = it->second;
+	data.XXX = newVal;
+	it->second = data;
+	
+	return 0;
+}
+*/
 
 int setAccount(char *username, char *newVal, size_t len)
 {
