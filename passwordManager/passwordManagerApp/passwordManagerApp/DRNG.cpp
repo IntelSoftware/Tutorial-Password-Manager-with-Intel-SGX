@@ -261,7 +261,7 @@ ULONG DRNG::get_n_rand64 (ULONG64 *buf, ULONG n, ULONG retries)
 #else
 	count= get_n_rand32((ULONG32 *) buf, n, retries);
 	if ( count == n ) {
-		count= get_n_rand32((ULONG32 *)buf+n*4, n, retries);
+		count= get_n_rand32((ULONG32 *)(buf)+count, n, retries);
 		if ( count == n ) return n;
 		return n/2 + int(count/2);
 	}
@@ -363,7 +363,7 @@ ULONG DRNG::get_n_seed64 (ULONG64 *buf, ULONG n, ULONG retries)
 # else
 	count= get_n_seed32((ULONG32 *) buf, n, retries);
 	if ( count == n ) {
-		count= get_n_seed32((ULONG32 *)buf+n*4, n, retries);
+		count= get_n_seed32((ULONG32 *)(buf)+count, n, retries);
 		if ( count == n ) return n;
 		return n/2 + int(count/2);
 	}

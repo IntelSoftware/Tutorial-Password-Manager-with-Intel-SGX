@@ -1,11 +1,10 @@
-// crypto.cpp : Defines the entry point for the console application.
-//
+// Tests for the Crypto module
 
 #pragma comment(lib, "Bcrypt.lib")
 
 #include "stdafx.h"
 #include "windows.h"
-#include "Crypto.h"
+#include "..\..\Crypto.h"
 #include <stdio.h>
 #include <string.h>
 
