@@ -1,0 +1,7 @@
+Debug/
+ipch/
+x64/
+*.sdf
+*.opensdf
+*.vcxproj.user
+*.suo
