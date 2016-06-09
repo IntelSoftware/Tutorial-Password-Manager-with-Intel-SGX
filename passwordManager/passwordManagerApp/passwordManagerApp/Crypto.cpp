@@ -135,9 +135,47 @@ crypto_status_t Crypto::encrypt_master_key (BYTE master_key[16], BYTE db_key_pt[
 	return this->aes_128_gcm_encrypt(master_key, iv, 12, db_key_pt, 16, db_key_ct, 16, tag, 16);
 }
 
-crypto_status_t Crypto::decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[12], BYTE db_key_pt[16])
+crypto_status_t Crypto::decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16])
 {
 	return this->aes_128_gcm_decrypt(master_key, iv, 12, db_key_ct, 16, db_key_pt, 16, tag, 16);
+}
+
+crypto_status_t Crypto::encrypt_account_password (BYTE db_key[16], PBYTE password_pt, ULONG password_len, PBYTE password_ct, BYTE iv[12], BYTE tag[16], DWORD flags)
+{
+	crypto_status_t rv;
+	
+	if ( ! (flags & CRYPTO_F_IV_PROVIDED) ) {
+		rv= this->generate_nonce_gcm(iv);
+		if ( rv != CRYPTO_OK ) {
+			return rv;
+		}
+	}
+
+	return this->aes_128_gcm_encrypt(db_key, iv, 12, password_pt, password_len, password_ct, password_len, tag, 16);
+}
+
+crypto_status_t Crypto::decrypt_account_password (BYTE db_key[16], PBYTE password_ct, ULONG password_len, BYTE iv[12], BYTE tag[16], PBYTE password)
+{
+	return this->aes_128_gcm_decrypt(db_key, iv, 12, password_ct, password_len, password, password_len, tag, 16);
+}
+
+crypto_status_t Crypto::encrypt_database (BYTE db_key[16], PBYTE db_serialized, ULONG db_size, PBYTE db_ct, BYTE iv[12], BYTE tag[16], DWORD flags)
+{
+	crypto_status_t rv;
+	
+	if ( ! (flags & CRYPTO_F_IV_PROVIDED) ) {
+		rv= this->generate_nonce_gcm(iv);
+		if ( rv != CRYPTO_OK ) {
+			return rv;
+		}
+	}
+
+	return this->aes_128_gcm_encrypt(db_key, iv, 12, db_serialized, db_size, db_ct, db_size, tag, 16);
+}
+
+crypto_status_t Crypto::decrypt_database (BYTE db_key[16], PBYTE db_ct, ULONG db_size, BYTE iv[12], BYTE tag[16], PBYTE db_serialized)
+{
+	return this->aes_128_gcm_decrypt(db_key, iv, 12, db_ct, db_size, db_serialized, db_size, tag, 16);
 }
 
 static void _xor_quads (void *dst, void *src, int n)

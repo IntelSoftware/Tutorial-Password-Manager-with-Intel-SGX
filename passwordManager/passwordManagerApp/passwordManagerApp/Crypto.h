@@ -61,6 +61,12 @@ public:
 	crypto_status_t validate_master_key_ex (PBYTE passphrase, ULONG passphrase_len, PBYTE salt, ULONG salt_len, ULONG iterations, BYTE key_in[16]);
 
 	crypto_status_t encrypt_master_key (BYTE master_key[16], BYTE db_key_pt[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], DWORD flags= 0);
-	crypto_status_t decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[12], BYTE db_key_pt[16]);
+	crypto_status_t decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16]);
+
+	crypto_status_t encrypt_account_password (BYTE db_key[16], PBYTE password_pt, ULONG password_len, PBYTE password_ct, BYTE iv[12], BYTE tag[16], DWORD flags= 0);
+	crypto_status_t decrypt_account_password (BYTE db_key[16], PBYTE password_ct, ULONG password_len, BYTE iv[12], BYTE tag[16], PBYTE password);
+
+	crypto_status_t encrypt_database (BYTE db_key[16], PBYTE db_serialized, ULONG db_size, PBYTE db_ct, BYTE iv[12], BYTE tag[16], DWORD flags= 0);
+	crypto_status_t decrypt_database (BYTE db_key[16], PBYTE db_ct, ULONG db_size, BYTE iv[12], BYTE tag[16], PBYTE db_serialized);
 };
 
