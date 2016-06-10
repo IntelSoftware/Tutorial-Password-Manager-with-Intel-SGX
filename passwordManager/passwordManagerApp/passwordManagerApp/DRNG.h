@@ -20,11 +20,10 @@ class DRNG
 
 	ULONG seed_from_rdrand (void *buf, ULONG n);
 
-	int DRNG::ceiling_log2 (ULONGLONG n);
+	int ceiling_log2 (ULONGLONG n);
 
 public:
 	DRNG(void);
-	DRNG(int *info);
 	~DRNG(void);
 
 	int have_rdrand(void);

@@ -6,7 +6,7 @@
 #include <intrin.h>
 #include <immintrin.h>
 
-#define DRNG_SUPPORT_UNKNOWN	-1 
+#define DRNG_SUPPORT_UNKNOWN	-1
 #define DRNG_SUPPORT_NONE		0
 #define DRNG_SUPPORT_RDRAND		0x01
 #define DRNG_SUPPORT_RDSEED		0x02
@@ -24,47 +24,31 @@
 
 static int _drng_support= DRNG_SUPPORT_UNKNOWN;
 
-static int _get_drng_support(int *cpuinfo);
-
-int _get_drng_support(int info[])
-{
-	int rv= DRNG_SUPPORT_NONE;
-
-	if ( memcmp(&(info[1]), "Genu", 4) || 
-		memcmp(&(info[3]), "ineI", 4) ||
-		memcmp(&(info[2]), "ntel", 4) ) return rv;
-
-	__cpuidex(info, 1, 0);
-
-	if ( ((UINT) info[2]) & (1<<30) ) rv|= DRNG_SUPPORT_RDRAND;
-
-#ifdef COMPILER_HAS_RDSEED_SUPPORT
-	__cpuidex(info, 7, 0);
-
-	if ( ((UINT) info[1]) & (1<<18) ) rv|= DRNG_SUPPORT_RDSEED;
-#endif
-
-	return rv;
-}
-
 DRNG::DRNG(void)
 {
 	int info[4];
-	
+
 	if (_drng_support != DRNG_SUPPORT_UNKNOWN) return;
+	
+	_drng_support= DRNG_SUPPORT_NONE;
 
 	// Check our feature support
 
 	__cpuid(info, 0);
 
-	_drng_support= _get_drng_support(info);
-}
+	if ( memcmp(&(info[1]), "Genu", 4) ||
+		memcmp(&(info[3]), "ineI", 4) ||
+		memcmp(&(info[2]), "ntel", 4) ) return;
 
-DRNG::DRNG(int *info)
-{
-	if (_drng_support != DRNG_SUPPORT_UNKNOWN) return;
+	__cpuidex(info, 1, 0);
 
-	_drng_support= _get_drng_support(info);
+	if ( ((UINT) info[2]) & (1<<30) ) _drng_support|= DRNG_SUPPORT_RDRAND;
+
+#ifdef COMPILER_HAS_RDSEED_SUPPORT
+	__cpuidex(info, 7, 0);
+
+	if ( ((UINT) info[1]) & (1<<18) ) _drng_support|= DRNG_SUPPORT_RDSEED;
+#endif
 }
 
 DRNG::~DRNG(void)
@@ -78,7 +62,7 @@ int DRNG::have_rdrand ()
 
 int DRNG::have_rdseed ()
 {
-	return HAVE_RDRAND;
+	return HAVE_RDSEED;
 }
 
 int DRNG::random (ULONGLONG max, ULONGLONG *rand)
@@ -274,7 +258,7 @@ ULONG DRNG::get_n_rand64 (ULONG64 *buf, ULONG n, ULONG retries)
 // RDSEED internal methods
 //-----------------------------------------------
 
-int DRNG::seed32 (ULONG32 *seed) 
+int DRNG::seed32 (ULONG32 *seed)
 {
 #ifdef COMPILER_HAS_RDSEED_SUPPORT
 	int retries= 100;
@@ -401,7 +385,7 @@ ULONG DRNG::seed_from_rdrand (void *buf, ULONG n)
 	status= BCryptGenerateSymmetricKey(halgo, &hkey, NULL, 0, (PBYTE) key, 16, 0);
 	if ( status != STATUS_SUCCESS ) return 0;
 
-	status= BCryptSetProperty(halgo, BCRYPT_CHAINING_MODE, (PBYTE) BCRYPT_CHAIN_MODE_CBC, 
+	status= BCryptSetProperty(halgo, BCRYPT_CHAINING_MODE, (PBYTE) BCRYPT_CHAIN_MODE_CBC,
 		sizeof(BCRYPT_CHAIN_MODE_CBC), 0);
 	if ( status != STATUS_SUCCESS ) return 0;
 
@@ -416,7 +400,7 @@ ULONG DRNG::seed_from_rdrand (void *buf, ULONG n)
 		}
 
 		// CBC-MAC mode is a CBC encryption with a 0 IV on the plaintext.
-		
+
 		status= BCryptEncrypt(hkey, (PBYTE) rand, 512*16, NULL, NULL, 0, (PBYTE) rand, 512*16, &len, 0);
 		if ( status != STATUS_SUCCESS || len != 512*16 ) {
 			// Error
