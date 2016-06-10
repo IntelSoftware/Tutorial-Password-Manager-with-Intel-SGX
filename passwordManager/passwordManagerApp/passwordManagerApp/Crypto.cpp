@@ -87,7 +87,7 @@ crypto_status_t Crypto::validate_master_key_ex (PBYTE passphrase, DWORD passphra
 		return rv;
 	}
 
-	if ( strncmp((const char *) key, (const char *) key_in, 16) == 0 ) return CRYPTO_OK;
+	if ( memcmp((const char *) key, (const char *) key_in, 16) == 0 ) return CRYPTO_OK;
 
 	// Error. They don't match.
 
