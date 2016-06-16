@@ -73,26 +73,25 @@ crypto_status_t Crypto::derive_master_key_ex (PBYTE passphrase, DWORD passphrase
 	return CRYPTO_OK;
 }
 
-crypto_status_t Crypto::validate_passphrase (PBYTE passphrase, DWORD passphrase_len, BYTE salt[8], BYTE key_in[16])
+crypto_status_t Crypto::validate_passphrase (PBYTE passphrase, ULONG passphrase_len, BYTE salt[8], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16])
 {
-	return this->validate_passphrase_ex(passphrase, passphrase_len, (PBYTE) salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
+	return this->validate_passphrase_ex(passphrase, passphrase_len, (PBYTE) salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, db_key_ct, iv, tag, db_key_pt);
 }
 
-crypto_status_t Crypto::validate_passphrase_ex (PBYTE passphrase, DWORD passphrase_len, PBYTE salt, DWORD salt_len, ULONG iterations, BYTE key_in[16])
+crypto_status_t Crypto::validate_passphrase_ex (PBYTE passphrase, ULONG passphrase_len, PBYTE salt, ULONG salt_len, ULONG iterations, BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16])
 {
-	BYTE key[16];
+	BYTE mkey[16];
 	crypto_status_t rv= CRYPTO_ERR_UNKNOWN;
 
-	rv= this->derive_master_key_ex(passphrase, passphrase_len, salt, salt_len, iterations, key);
+	rv= this->derive_master_key_ex(passphrase, passphrase_len, salt, salt_len, iterations, mkey);
 	if ( rv != CRYPTO_OK ) {		
 		return rv;
 	}
 
-	if ( memcmp((const char *) key, (const char *) key_in, 16) == 0 ) return CRYPTO_OK;
+	rv= this->decrypt_database_key(mkey, db_key_ct, iv, tag, db_key_pt);
+	if (rv == CRYPTO_ERR_DECRYPT_AUTH) return CRYPTO_ERR_PASS_MISMATCH;
 
-	// Error. They don't match.
-
-	return CRYPTO_ERR_PASS_MISMATCH;
+	return rv;
 }
 
 crypto_status_t Crypto::generate_salt (BYTE salt[8])

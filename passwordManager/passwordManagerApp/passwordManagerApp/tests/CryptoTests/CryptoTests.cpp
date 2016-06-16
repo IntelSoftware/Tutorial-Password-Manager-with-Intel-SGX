@@ -274,8 +274,9 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 		wprintf(L"Known key derivation test failed\n");
 		return 0;
 	}
+	memset(tkey, 0, 16);
 
-	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->derive_master_key(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK && ! memcmp(tkey, tkey_answer, 16) ) {
 		wprintf(L"Known master key validation OK\n");
 	} else {
 		wprintf(L"Known master key validation FAILED\n");
@@ -283,7 +284,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 	}
 
 	wprintf(L"Validating with bad passphrase (this should fail)...\n");
-	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len-1, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->derive_master_key(passphrase, passphrase_len-1, tsalt, tkey)) == CRYPTO_OK && ! memcmp(tkey, tkey_answer, 16)) {
 		wprintf(L"Known master key validation OK\n");
 		return 0;
 	} else {
@@ -292,7 +293,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 
 	wprintf(L"Validating with bad salt (this should fail)...\n");
 	tsalt[0]^= 0xFF;
-	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->derive_master_key(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK && ! memcmp(tkey, tkey_answer, 16)) {
 		wprintf(L"Known master key validation OK\n");
 		return 0;
 	} else {
@@ -300,15 +301,6 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 	}
 	tsalt[0]^= 0xFF;
 
-	wprintf(L"Validating with bad key but correct passphrase and salt (this should fail)...\n");
-	tkey[0]^= 0xFF;
-	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
-		wprintf(L"Known master key validation OK\n");
-		return 0;
-	} else {
-		wprintf(L"Known master key validation FAILED\n");
-	}
-	tkey[0]^= 0xFF;
 
 	// Random salt, random key test
 
