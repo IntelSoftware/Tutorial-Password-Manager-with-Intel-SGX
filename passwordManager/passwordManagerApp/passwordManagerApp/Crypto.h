@@ -57,11 +57,12 @@ public:
 
 	crypto_status_t derive_master_key (PBYTE passphrase, ULONG passphrase_len, BYTE salt[8], BYTE key_out[16]);
 	crypto_status_t derive_master_key_ex (PBYTE passphrase, ULONG passphrase_len, PBYTE salt, ULONG salt_len, ULONG iterations, BYTE key_out[16]);
-	crypto_status_t validate_master_key (PBYTE passphrase, ULONG passphrase_len, BYTE salt[8], BYTE key_in[16]);
-	crypto_status_t validate_master_key_ex (PBYTE passphrase, ULONG passphrase_len, PBYTE salt, ULONG salt_len, ULONG iterations, BYTE key_in[16]);
 
-	crypto_status_t encrypt_master_key (BYTE master_key[16], BYTE db_key_pt[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], DWORD flags= 0);
-	crypto_status_t decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16]);
+	crypto_status_t validate_passphrase (PBYTE passphrase, ULONG passphrase_len, BYTE salt[8], BYTE key_in[16]);
+	crypto_status_t validate_passphrase_ex (PBYTE passphrase, ULONG passphrase_len, PBYTE salt, ULONG salt_len, ULONG iterations, BYTE key_in[16]);
+
+	crypto_status_t encrypt_database_key (BYTE master_key[16], BYTE db_key_pt[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], DWORD flags= 0);
+	crypto_status_t decrypt_database_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16]);
 
 	crypto_status_t encrypt_account_password (BYTE db_key[16], PBYTE password_pt, ULONG password_len, PBYTE password_ct, BYTE iv[12], BYTE tag[16], DWORD flags= 0);
 	crypto_status_t decrypt_account_password (BYTE db_key[16], PBYTE password_ct, ULONG password_len, BYTE iv[12], BYTE tag[16], PBYTE password);

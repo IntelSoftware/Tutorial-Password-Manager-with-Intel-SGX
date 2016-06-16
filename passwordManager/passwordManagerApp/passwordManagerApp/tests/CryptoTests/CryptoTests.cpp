@@ -120,9 +120,9 @@ int test_key_encryption(Crypto *crypto, PBYTE db_key, PBYTE master_key)
 	hexdump(iv, 12, 1);
 
 	wprintf(L"Encrypting known database key with known master key...\n");
-	status= crypto->encrypt_master_key(tmkey, tdbkey, ekey, iv, authtag, CRYPTO_F_IV_PROVIDED);
+	status= crypto->encrypt_database_key(tmkey, tdbkey, ekey, iv, authtag, CRYPTO_F_IV_PROVIDED);
 	if ( status != CRYPTO_OK ) {
-		wprintf(L"encrypt_master_key returned 0x%08x\n", status);
+		wprintf(L"encrypt_database_key returned 0x%08x\n", status);
 		return 0;
 	}
 	wprintf(L"Encrypted, known database key:\n");
@@ -154,9 +154,9 @@ int test_key_encryption(Crypto *crypto, PBYTE db_key, PBYTE master_key)
 		return 0;
 	}
 
-	status= crypto->encrypt_master_key(master_key, db_key, ekey, iv, kauthtag);
+	status= crypto->encrypt_database_key(master_key, db_key, ekey, iv, kauthtag);
 	if ( status != CRYPTO_OK ) {
-		wprintf(L"encrypt_master_key returned 0x%08x\n", status);
+		wprintf(L"encrypt_database_key returned 0x%08x\n", status);
 		return 0;
 	}
 	wprintf(L"Encrypted, database key:\n");
@@ -180,53 +180,53 @@ int test_key_encryption(Crypto *crypto, PBYTE db_key, PBYTE master_key)
 	}
 
 	wprintf(L"Decrypting encrypted master key...\n");
-	status= crypto->decrypt_master_key(master_key, ekey, iv, kauthtag, ddb_key);
+	status= crypto->decrypt_database_key(master_key, ekey, iv, kauthtag, ddb_key);
 	if ( status != CRYPTO_OK ) {
-		wprintf(L"decrypt_master_key returned 0x%08x\n", status);
+		wprintf(L"decrypt_database_key returned 0x%08x\n", status);
 		return 0;
 	} else {
-		wprintf(L"decrypt_master_key OK\n", status);
+		wprintf(L"decrypt_database_key OK\n", status);
 		hexdump(ddb_key, 16, 1);
 	}
 
 	wprintf(L"Decrypt with bad master key (should fail)...\n");
-	status= crypto->decrypt_master_key(tmkey, ekey, iv, kauthtag, ddb_key);
+	status= crypto->decrypt_database_key(tmkey, ekey, iv, kauthtag, ddb_key);
 	if ( status == CRYPTO_OK ) {
-		wprintf(L"decrypt_master_key OK\n", status);
+		wprintf(L"decrypt_database_key OK\n", status);
 		return 0;
 	}  else {
-		wprintf(L"decrypt_master_key FAILED\n", status);
+		wprintf(L"decrypt_database_key FAILED\n", status);
 	}
 
 	wprintf(L"Decrypt with bad IV (should fail)...\n");
 	iv[2]^= 0xff;
-	status= crypto->decrypt_master_key(master_key, ekey, iv, kauthtag, ddb_key);
+	status= crypto->decrypt_database_key(master_key, ekey, iv, kauthtag, ddb_key);
 	if ( status == CRYPTO_OK ) {
-		wprintf(L"decrypt_master_key OK\n", status);
+		wprintf(L"decrypt_database_key OK\n", status);
 		return 0;
 	}  else {
-		wprintf(L"decrypt_master_key FAILED\n", status);
+		wprintf(L"decrypt_database_key FAILED\n", status);
 	}
 	iv[2]^= 0xff;
 
 	wprintf(L"Decrypt with bad ciphertext (should fail)...\n");
 	ekey[15]^= 0xff;
-	status= crypto->decrypt_master_key(master_key, ekey, iv, kauthtag, ddb_key);
+	status= crypto->decrypt_database_key(master_key, ekey, iv, kauthtag, ddb_key);
 	if ( status == CRYPTO_OK ) {
-		wprintf(L"decrypt_master_key OK\n", status);
+		wprintf(L"decrypt_database_key OK\n", status);
 		return 0;
 	}  else {
-		wprintf(L"decrypt_master_key FAILED\n", status);
+		wprintf(L"decrypt_database_key FAILED\n", status);
 	}
 	ekey[15]^= 0xff;
 
 	wprintf(L"Decrypt with bad authtag (should fail)...\n");
-	status= crypto->decrypt_master_key(master_key, ekey, iv, authtag, ddb_key);
+	status= crypto->decrypt_database_key(master_key, ekey, iv, authtag, ddb_key);
 	if ( status == CRYPTO_OK ) {
-		wprintf(L"decrypt_master_key OK\n", status);
+		wprintf(L"decrypt_database_key OK\n", status);
 		return 0;
 	}  else {
-		wprintf(L"decrypt_master_key FAILED\n", status);
+		wprintf(L"decrypt_database_key FAILED\n", status);
 	}
 	
 	return 1;
@@ -275,7 +275,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 		return 0;
 	}
 
-	if ( (status= crypto->validate_master_key(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
 		wprintf(L"Known master key validation OK\n");
 	} else {
 		wprintf(L"Known master key validation FAILED\n");
@@ -283,7 +283,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 	}
 
 	wprintf(L"Validating with bad passphrase (this should fail)...\n");
-	if ( (status= crypto->validate_master_key(passphrase, passphrase_len-1, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len-1, tsalt, tkey)) == CRYPTO_OK ) {
 		wprintf(L"Known master key validation OK\n");
 		return 0;
 	} else {
@@ -292,7 +292,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 
 	wprintf(L"Validating with bad salt (this should fail)...\n");
 	tsalt[0]^= 0xFF;
-	if ( (status= crypto->validate_master_key(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
 		wprintf(L"Known master key validation OK\n");
 		return 0;
 	} else {
@@ -302,7 +302,7 @@ int test_kdf (Crypto *crypto, PBYTE passphrase, DWORD passphrase_len, PBYTE salt
 
 	wprintf(L"Validating with bad key but correct passphrase and salt (this should fail)...\n");
 	tkey[0]^= 0xFF;
-	if ( (status= crypto->validate_master_key(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
+	if ( (status= crypto->validate_passphrase(passphrase, passphrase_len, tsalt, tkey)) == CRYPTO_OK ) {
 		wprintf(L"Known master key validation OK\n");
 		return 0;
 	} else {

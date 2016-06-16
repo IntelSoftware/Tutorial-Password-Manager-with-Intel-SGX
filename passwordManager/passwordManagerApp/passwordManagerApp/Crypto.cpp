@@ -4,8 +4,6 @@
 #include <string.h>
 #include <intrin.h>
 
-static void _xor_quads (void *dst, void *src, int n);
-
 Crypto::Crypto(void)
 {
 }
@@ -58,13 +56,16 @@ crypto_status_t Crypto::derive_master_key_ex (PBYTE passphrase, DWORD passphrase
 	lengths[1]= 32;
 
 	for (i= 0; i< iterations; ++i) {
+		int j;
+
 		memcpy(msg, md, 32);
 		rv= this->sha256_multi(messages, lengths, md);
 		if ( rv != CRYPTO_OK) {			
 			return rv;
 		}
 		
-		_xor_quads(key, md, 4);
+		// The compiler will optimize this
+		for (j= 0; j<32; ++j) key[j]^= md[j];
 	}
 
 	memcpy(key_out, &(key[8]), 16);
@@ -72,12 +73,12 @@ crypto_status_t Crypto::derive_master_key_ex (PBYTE passphrase, DWORD passphrase
 	return CRYPTO_OK;
 }
 
-crypto_status_t Crypto::validate_master_key (PBYTE passphrase, DWORD passphrase_len, BYTE salt[8], BYTE key_in[16])
+crypto_status_t Crypto::validate_passphrase (PBYTE passphrase, DWORD passphrase_len, BYTE salt[8], BYTE key_in[16])
 {
-	return this->validate_master_key_ex(passphrase, passphrase_len, (PBYTE) salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
+	return this->validate_passphrase_ex(passphrase, passphrase_len, (PBYTE) salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
 }
 
-crypto_status_t Crypto::validate_master_key_ex (PBYTE passphrase, DWORD passphrase_len, PBYTE salt, DWORD salt_len, ULONG iterations, BYTE key_in[16])
+crypto_status_t Crypto::validate_passphrase_ex (PBYTE passphrase, DWORD passphrase_len, PBYTE salt, DWORD salt_len, ULONG iterations, BYTE key_in[16])
 {
 	BYTE key[16];
 	crypto_status_t rv= CRYPTO_ERR_UNKNOWN;
@@ -121,7 +122,7 @@ crypto_status_t Crypto::generate_nonce_gcm (BYTE *nonce)
 	return CRYPTO_OK;
 }
 
-crypto_status_t Crypto::encrypt_master_key (BYTE master_key[16], BYTE db_key_pt[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], DWORD flags)
+crypto_status_t Crypto::encrypt_database_key (BYTE master_key[16], BYTE db_key_pt[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], DWORD flags)
 {
 	crypto_status_t rv;
 	
@@ -135,7 +136,7 @@ crypto_status_t Crypto::encrypt_master_key (BYTE master_key[16], BYTE db_key_pt[
 	return this->aes_128_gcm_encrypt(master_key, iv, 12, db_key_pt, 16, db_key_ct, 16, tag, 16);
 }
 
-crypto_status_t Crypto::decrypt_master_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16])
+crypto_status_t Crypto::decrypt_database_key (BYTE master_key[16], BYTE db_key_ct[16], BYTE iv[12], BYTE tag[16], BYTE db_key_pt[16])
 {
 	return this->aes_128_gcm_decrypt(master_key, iv, 12, db_key_ct, 16, db_key_pt, 16, tag, 16);
 }
@@ -176,15 +177,6 @@ crypto_status_t Crypto::encrypt_database (BYTE db_key[16], PBYTE db_serialized, 
 crypto_status_t Crypto::decrypt_database (BYTE db_key[16], PBYTE db_ct, ULONG db_size, BYTE iv[12], BYTE tag[16], PBYTE db_serialized)
 {
 	return this->aes_128_gcm_decrypt(db_key, iv, 12, db_ct, db_size, db_serialized, db_size, tag, 16);
-}
-
-static void _xor_quads (void *dst, void *src, int n)
-{
-	ULONG64 *qsrc= (ULONG64 *) src;
-	ULONG64 *qdst= (ULONG64 *) dst;
-	int i;
-
-	for (i= 0; i< n; ++i, ++qdst, ++qsrc) (*qdst)^= *qsrc;
 }
 
 crypto_status_t Crypto::aes_init (BCRYPT_ALG_HANDLE *halgo, LPCWSTR algo_id, PBYTE chaining_mode, 
