@@ -57,13 +57,16 @@ crypto_status_t E_Crypto::derive_master_key_ex (unsigned char *passphrase, unsig
 	lengths[1]= 32;
 
 	for (i= 0; i< iterations; ++i) {
+		int j;
+
 		memcpy(msg, md, 32);
 		rv= this->sha256_multi(messages, lengths, md);
 		if ( rv != CRYPTO_OK) {			
 			return rv;
 		}
 		
-		_xor_quads(key, md, 4);
+		// The compiler will optimize this
+		for (j= 0; j<32; ++j) key[j]^= md[j];
 	}
 
 	memcpy(key_out, &(key[8]), 16);
@@ -71,21 +74,12 @@ crypto_status_t E_Crypto::derive_master_key_ex (unsigned char *passphrase, unsig
 	return CRYPTO_OK;
 }
 
-static void _xor_quads (void *dst, void *src, int n)
+crypto_status_t E_Crypto::validate_passphrase (unsigned char *passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char key_in[16])
 {
-	uint64_t *qsrc= (uint64_t *) src;
-	uint64_t *qdst= (uint64_t *) dst;
-	int i;
-
-	for (i= 0; i< n; ++i, ++qdst, ++qsrc) (*qdst)^= *qsrc;
+	return this->validate_passphrase_ex(passphrase, passphrase_len, salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
 }
 
-crypto_status_t E_Crypto::validate_master_key (unsigned char *passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char key_in[16])
-{
-	return this->validate_master_key_ex(passphrase, passphrase_len, salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
-}
-
-crypto_status_t E_Crypto::validate_master_key_ex (unsigned char *passphrase, unsigned long passphrase_len, unsigned char *salt, unsigned long salt_len,
+crypto_status_t E_Crypto::validate_passphrase_ex (unsigned char *passphrase, unsigned long passphrase_len, unsigned char *salt, unsigned long salt_len,
 	unsigned long iterations, unsigned char key_in[16])
 {
 	unsigned char key[16];
@@ -130,7 +124,7 @@ crypto_status_t E_Crypto::generate_nonce_gcm (unsigned char *nonce)
 	return CRYPTO_OK;
 }
 
-crypto_status_t E_Crypto::encrypt_master_key (unsigned char master_key[16], unsigned char db_key_pt[16], unsigned char db_key_ct[16],
+crypto_status_t E_Crypto::encrypt_database_key (unsigned char master_key[16], unsigned char db_key_pt[16], unsigned char db_key_ct[16],
 	unsigned char iv[12], unsigned char tag[16], unsigned int flags)
 {
 	crypto_status_t rv;
@@ -146,7 +140,7 @@ crypto_status_t E_Crypto::encrypt_master_key (unsigned char master_key[16], unsi
 	return this->aes_128_gcm_encrypt(master_key, iv, 12, db_key_pt, 16, db_key_ct, tag);
 }
 
-crypto_status_t E_Crypto::decrypt_master_key (unsigned char master_key[16], unsigned char db_key_ct[16], unsigned char iv[12],
+crypto_status_t E_Crypto::decrypt_database_key (unsigned char master_key[16], unsigned char db_key_ct[16], unsigned char iv[12],
 	unsigned char tag[16], unsigned char db_key_pt[16])
 {
 	return this->aes_128_gcm_decrypt(master_key, iv, 12, db_key_ct, 16, db_key_pt, tag);
