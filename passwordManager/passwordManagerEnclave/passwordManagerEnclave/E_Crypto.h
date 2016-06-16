@@ -52,8 +52,8 @@ public:
 
 	crypto_status_t derive_master_key (unsigned char * passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char key_out[16]);
 	crypto_status_t derive_master_key_ex (unsigned char * passphrase, unsigned long passphrase_len, unsigned char * salt, unsigned long salt_len, unsigned long iterations, unsigned char key_out[16]);
-	crypto_status_t validate_passphrase (unsigned char * passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char key_in[16]);
-	crypto_status_t validate_passphrase_ex (unsigned char * passphrase, unsigned long passphrase_len, unsigned char * salt, unsigned long salt_len, unsigned long iterations, unsigned char key_in[16]);
+	crypto_status_t validate_passphrase (unsigned char * passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned char db_key_pt[16]);
+	crypto_status_t validate_passphrase_ex (unsigned char * passphrase, unsigned long passphrase_len, unsigned char * salt, unsigned long salt_len, unsigned long iterations, unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned char db_key_pt[16]);
 
 	crypto_status_t encrypt_database_key (unsigned char master_key[16], unsigned char db_key_pt[16], unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned int flags= 0);
 	crypto_status_t decrypt_database_key (unsigned char master_key[16], unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned char db_key_pt[16]);

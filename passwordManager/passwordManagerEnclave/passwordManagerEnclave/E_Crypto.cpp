@@ -74,27 +74,27 @@ crypto_status_t E_Crypto::derive_master_key_ex (unsigned char *passphrase, unsig
 	return CRYPTO_OK;
 }
 
-crypto_status_t E_Crypto::validate_passphrase (unsigned char *passphrase, unsigned long passphrase_len, unsigned char salt[8], unsigned char key_in[16])
+crypto_status_t E_Crypto::validate_passphrase (unsigned char * passphrase, unsigned long passphrase_len, unsigned char salt[8], 
+	unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned char db_key_pt[16])
 {
-	return this->validate_passphrase_ex(passphrase, passphrase_len, salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, key_in);
+	return this->validate_passphrase_ex(passphrase, passphrase_len, salt, CRYPTO_KDF_SALT_LEN, CRYPTO_KDF_ITERATIONS, db_key_ct, iv, tag, db_key_pt);
 }
 
-crypto_status_t E_Crypto::validate_passphrase_ex (unsigned char *passphrase, unsigned long passphrase_len, unsigned char *salt, unsigned long salt_len,
-	unsigned long iterations, unsigned char key_in[16])
+crypto_status_t E_Crypto::validate_passphrase_ex (unsigned char * passphrase, unsigned long passphrase_len, unsigned char * salt, unsigned long salt_len, 
+	unsigned long iterations, unsigned char db_key_ct[16], unsigned char iv[12], unsigned char tag[16], unsigned char db_key_pt[16])
 {
-	unsigned char key[16];
+	unsigned char mkey[16];
 	crypto_status_t rv= CRYPTO_ERR_UNKNOWN;
 
-	rv= this->derive_master_key_ex(passphrase, passphrase_len, salt, salt_len, iterations, key);
+	rv= this->derive_master_key_ex(passphrase, passphrase_len, salt, salt_len, iterations, mkey);
 	if ( rv != CRYPTO_OK ) {		
 		return rv;
 	}
 
-	if ( memcmp((const char *) key, (const char *) key_in, 16) == 0 ) return CRYPTO_OK;
+	rv= this->decrypt_database_key(mkey, db_key_ct, iv, tag, db_key_pt);
+	if ( rv == CRYPTO_ERR_DECRYPT_AUTH ) return CRYPTO_ERR_PASS_MISMATCH;
 
-	// Error. They don't match.
-
-	return CRYPTO_ERR_PASS_MISMATCH;
+	return rv;
 }
 
 crypto_status_t E_Crypto::generate_salt (unsigned char salt[8])
